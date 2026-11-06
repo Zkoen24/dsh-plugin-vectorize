@@ -1,0 +1,41 @@
+{
+  "name": "@deepseek-ai/dsh-plugin-vectorize",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Raster-to-vector (PNG/JPEG to SVG/AI) tool plugin for DeepSeek Harness",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cli": "./lib/cli.js",
+    "./src/*": "./src/*"
+  },
+  "files": [
+    "lib/**/*.js",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "vitest run",
+    "vectorize": "node lib/cli.js",
+    "export:repo": "node scripts/export-repo.mjs",
+    "verify:installed": "node tests/verify-installed.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.5",
+    "sharp": "^0.35.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^0.1.0-rc.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0"
+  }
+}

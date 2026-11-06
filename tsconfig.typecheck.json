@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "sharp": ["../../node_modules/.pnpm/sharp@0.35.3_@types+node@22.20.0/node_modules/sharp/dist/index.d.mts"],
+      "@deepseek-ai/dsh-tools": ["../../packages/core/tools/lib/types/index.d.ts"],
+      "@deepseek-ai/cordis": ["../../vendor/cordis/lib/types/index.d.ts"]
+    }
+  }
+}

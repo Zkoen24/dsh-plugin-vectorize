@@ -1,0 +1,10 @@
+# Load the vectorize plugin into a dsh profile:
+#
+#   pnpm dsh web --patch ./plugins/vectorize/cordis.yml
+#
+# The plugin path must be absolute (a patch does not change the profile's module
+# resolution root). Point it at your checkout; `lib/index.js` is the compiled
+# entry, `src/index.ts` works when dsh is launched from source with tsx.
+- insert:
+    - id: vectorize
+      name: 'E:/deepseek/plugins/vectorize/lib/index.js'

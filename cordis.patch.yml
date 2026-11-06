@@ -1,0 +1,5 @@
+# Bundle layer for `dsh plugin --profile <name> add <this package>`:
+# installs the vectorize_image tool into the profile that lists this bundle.
+- insert:
+    - id: vectorize
+      name: '@deepseek-ai/dsh-plugin-vectorize'
