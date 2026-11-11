@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Raster 鈫?vector pipeline: decode, quantize, smooth labels, then trace each
  * color plate. In `alpha` mode a plate is split into connected components and
  * every component (or alpha band inside it) keeps its own fill opacity, so
@@ -6,7 +6,7 @@
  */
 import sharp from 'sharp'
 import { traceMask, polygonArea } from './contour.ts'
-import { fitClosedLoop } from './curve.ts'
+import { fitCircleLoop, fitClosedLoop } from './curve.ts'
 import { hex, quantize } from './quantize.ts'
 import type { Op, Shape, VectorizeOptions, VectorizeResult } from './types.ts'
 
@@ -122,13 +122,29 @@ function shapeFromMask(
   coverage: number,
   precision: number,
 ): Shape | null {
-  const minArea = Math.max(1.5, (maskWidth * maskHeight) * 1e-6)
+  const minArea = Math.max(2, (maskWidth * maskHeight) * 1e-6)
   const subpaths: Op[][] = []
   let nodes = 0
   for (const loop of traceMask(mask, maskWidth, maskHeight)) {
-    if (polygonArea(loop) < minArea) continue
+    const area = polygonArea(loop)
+    if (area < minArea) continue
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const point of loop) {
+      if (point[0] < minX) minX = point[0]
+      if (point[1] < minY) minY = point[1]
+      if (point[0] > maxX) maxX = point[0]
+      if (point[1] > maxY) maxY = point[1]
+    }
+    const width = maxX - minX
+    const height = maxY - minY
+    // Hairline slivers from threshold noise are not editable artwork.
+    if (Math.min(width, height) < 1.5 && area < 6) continue
     const shifted = loop.map(([x, y]) => [x + offsetX, y + offsetY] as const)
-    const ops = fitClosedLoop(shifted, precision)
+    const small = Math.max(width, height) <= 24
+    const ops = fitCircleLoop(shifted, precision, small) ?? fitClosedLoop(shifted, precision)
     if (ops === null) continue
     subpaths.push(ops)
     nodes += ops.length
@@ -242,7 +258,11 @@ export function vectorizeRaster(raster: Raster, options: VectorizeOptions): Vect
       let bands = 1
       let low = median
       let high = median
-      if (solid < 0.5) {
+      // Small components are dots and marks: their alpha falls off radially from
+      // the antialiased rim, so banding would shred one dot into concentric
+      // rings. Keep them whole and let the median carry the opacity instead.
+      const small = Math.max(cw, ch) <= 24
+      if (!small && solid < 0.5) {
         const p15 = percentile(0.15)
         const p85 = percentile(0.85)
         if (p85 - p15 >= 32) {

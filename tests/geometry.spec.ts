@@ -1,6 +1,6 @@
-﻿import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { traceMask, polygonArea } from '../src/vectorize/contour.ts'
-import { fitClosedLoop, rdpClosed } from '../src/vectorize/curve.ts'
+import { fitCircleLoop, fitClosedLoop, rdpClosed } from '../src/vectorize/curve.ts'
 import type { Vec } from '../src/vectorize/types.ts'
 
 function rectMask(w: number, h: number, x0: number, y0: number, x1: number, y1: number): Uint8Array {
@@ -53,6 +53,39 @@ describe('curve fitting', () => {
     const last = ops![ops!.length - 1]!
     expect(Math.hypot(last.p[0] - ops![0]!.p[0], last.p[1] - ops![0]!.p[1])).toBeLessThan(0.001)
     expect(ops!.filter((op) => op.t === 'C').length).toBeGreaterThan(1)
+  })
+
+  it('collapses a round contour into four exact arcs', () => {
+    const ops = fitCircleLoop(circle, 0.8)
+    expect(ops).not.toBeNull()
+    expect(ops!).toHaveLength(5)
+    const curves = ops!.filter((op) => op.t === 'C')
+    expect(curves).toHaveLength(4)
+    const radius = 40
+    const center = [60, 60]
+    // Anchors sit exactly on the circle; sampled curve points stay within a
+    // fraction of a pixel of it (control points sit outside, as they must).
+    for (const op of ops!) {
+      expect(Math.abs(Math.hypot(op.p[0] - center[0]!, op.p[1] - center[1]!) - radius)).toBeLessThan(0.01)
+    }
+    let previous: Vec = (ops![0] as { p: Vec }).p
+    for (const op of curves) {
+      for (let step = 1; step <= 8; step++) {
+        const t = step / 8
+        const mt = 1 - t
+        const x = mt ** 3 * previous[0] + 3 * mt ** 2 * t * op.c1[0] + 3 * mt * t ** 2 * op.c2[0] + t ** 3 * op.p[0]
+        const y = mt ** 3 * previous[1] + 3 * mt ** 2 * t * op.c1[1] + 3 * mt * t ** 2 * op.c2[1] + t ** 3 * op.p[1]
+        expect(Math.abs(Math.hypot(x - center[0]!, y - center[1]!) - radius)).toBeLessThan(0.3)
+      }
+      previous = op.p
+    }
+  })
+
+  it('leaves a square alone instead of rounding it', () => {
+    const square: Vec[] = [
+      [10, 10], [50, 10], [50, 50], [10, 50],
+    ]
+    expect(fitCircleLoop(square, 0.8)).toBeNull()
   })
 })
 

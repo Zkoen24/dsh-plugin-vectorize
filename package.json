@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-plugin-vectorize",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Raster-to-vector (PNG/JPEG to SVG/AI) tool plugin for DeepSeek Harness",
